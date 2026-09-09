@@ -1,0 +1,20 @@
+---
+# Users to manage. Override in group_vars/host_vars or on the command line.
+users: []
+
+# Default login shell for created accounts.
+user_default_shell: /bin/bash
+
+# Whether to create the user's home directory.
+user_create_home: true
+
+# Whether to remove the home directory when a user is set to state: absent.
+user_remove_home_on_delete: false
+
+# When true, sudo drop-ins grant passwordless sudo (NOPASSWD).
+# When false, users must enter their password (requires a password to be set out of band).
+sudo_nopasswd: true
+
+# When true, an initial password (set via a user's `password` field) is expired on account
+# creation, forcing the user to choose a new password at first login.
+user_force_password_change: true

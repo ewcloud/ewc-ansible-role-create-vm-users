@@ -1,0 +1,111 @@
+---
+- name: Build list of non-absent users
+  ansible.builtin.set_fact:
+    _present_users: >-
+      {{ users | rejectattr('state', 'defined') | list
+         + (users | selectattr('state', 'defined')
+                  | rejectattr('state', 'equalto', 'absent') | list) }}
+
+- name: Ensure supplementary groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ _present_users | map(attribute='groups', default=[]) | flatten | unique }}"
+
+- name: Snapshot existing accounts before creation
+  ansible.builtin.getent:
+    database: passwd
+
+- name: Record which usernames already exist
+  ansible.builtin.set_fact:
+    _existing_usernames: "{{ ansible_facts.getent_passwd.keys() | list }}"
+
+- name: Manage user accounts
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    comment: "{{ item.fullname | default(omit) }}"
+    groups: "{{ item.groups | default([]) | join(',') | default(omit, true)}}"
+    append: false
+    password: "{{ item.password | default(omit) }}"
+    update_password: on_create
+    shell: "{{ user_default_shell }}"
+    create_home: "{{ user_create_home }}"
+    remove: "{{ (item.remove_home | default(user_remove_home_on_delete)) if (item.state | default('present') == 'absent') else omit }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  no_log: true
+  register: managed_users
+
+- name: Look up account home directories
+  ansible.builtin.getent:
+    database: passwd
+
+- name: Ensure .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_facts.getent_passwd[item.username][4] }}/.ssh"
+    state: directory
+    owner: "{{ item.username }}"
+    group: "{{ ansible_facts.getent_passwd[item.username][2] }}"
+    mode: "0700"
+  loop: "{{ _present_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when:
+    - item.ssh_keys | default([]) | length > 0
+    - ansible_facts.getent_passwd[item.username] is defined
+    - ansible_facts.getent_passwd[item.username][4] | default('') | length > 0
+
+- name: Manage authorized SSH keys
+  ansible.builtin.copy:
+    dest: "{{ ansible_facts.getent_passwd[item.username][4] }}/.ssh/authorized_keys"
+    content: "{{ item.ssh_keys | join('\n') }}\n"
+    owner: "{{ item.username }}"
+    group: "{{ ansible_facts.getent_passwd[item.username][2] }}"
+    mode: "0600"
+  loop: "{{ _present_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when:
+    - item.ssh_keys | default([]) | length > 0
+    - ansible_facts.getent_passwd[item.username] is defined
+    - ansible_facts.getent_passwd[item.username][4] | default('') | length > 0
+
+- name: Force password change at first login for new accounts
+  ansible.builtin.command:
+    cmd: "chage -d 0 {{ item.username }}"
+  loop: "{{ _present_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when:
+    - user_force_password_change | bool
+    - item.password is defined
+    - item.username not in _existing_usernames
+  changed_when: true
+
+- name: Grant sudo access via sudoers drop-in
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ item.username }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when:
+    - item.sudo | default(false)
+    - item.state | default('present') != 'absent'
+
+- name: Remove sudo drop-in when disabled or user removed
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/{{ item.username }}"
+    state: absent
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when: >
+    (not (item.sudo | default(false)))
+    or (item.state | default('present') == 'absent')
