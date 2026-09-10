@@ -52,7 +52,7 @@ in `group_vars/all.yml` or `host_vars`):
 ```yaml
 # create_vm_users.yml (in your playbook repo)
 - name: Manage VM users
-  hosts: vms
+  hosts: all
   become: true
   roles:
     - role: create_users
