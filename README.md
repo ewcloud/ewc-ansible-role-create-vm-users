@@ -31,7 +31,7 @@ This repository contains only the role. Install it as a dependency of an Ansible
 # requirements.yml
 roles:
   - name: create_users
-    src: https://github.com/<org>/ewc-ansible-role-create-vm-users.git
+    src: https://github.com/ewcloud/ewc-ansible-role-create-vm-users.git
     scm: git
     version: main   # or pin to a released tag
 ```
