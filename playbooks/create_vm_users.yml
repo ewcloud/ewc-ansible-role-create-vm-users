@@ -1,0 +1,9 @@
+---
+- name: Manage VM users
+  hosts: vms
+  become: true
+  vars_files:
+    # Path to the users data file; override with -e users_file=path/to/file.yml
+    - "{{ users_file | default(playbook_dir + '/../users.yml') }}"
+  roles:
+    - role: ewc-ansible-role-create-vm-users

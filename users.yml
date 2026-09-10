@@ -1,0 +1,23 @@
+---
+users:
+  - username: alice
+    fullname: Alice Example
+    groups:
+      - developers
+    sudo: true
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...replace-me alice@laptop"
+
+  - username: bob
+    fullname: Bob Example
+    groups:
+      - developers
+      - deploy
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...key-one bob@laptop"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...key-two bob@desktop"
+
+  # Remove a previously-created account
+  - username: carol
+    state: absent
+    # remove_home: true
