@@ -1,6 +1,6 @@
 ---
 - name: Manage VM users
-  hosts: vms
+  hosts: all
   become: true
   vars_files:
     # Path to the users data file; override with -e users_file=path/to/file.yml
