@@ -1,0 +1,5 @@
+---
+roles:
+  - name: ewc-ansible-role-create-vm-users
+    src: https://github.com/ewcloud/ewc-ansible-role-create-vm-users.git
+    version: 0.0.1
