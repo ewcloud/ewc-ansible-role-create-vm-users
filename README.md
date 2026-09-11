@@ -108,8 +108,11 @@ users:
 
 Important:
 - Use the **public** key (the contents of `id_ed25519.pub`), never a private key.
-- `authorized_keys` is managed **exclusively** — the role writes exactly the keys listed
-  here and overwrites any keys added manually on the host.
+- `authorized_keys` is managed when one or more `ssh_keys` are listed — the role writes exactly
+  those keys and overwrites any added manually on the host. **Note:** if you remove all keys
+  (empty `ssh_keys` or drop the field), existing keys are **not** revoked — the current
+  `authorized_keys` file is left as-is. To revoke access, delete the keys on the host or set the
+  account to `state: absent`.
 - Removing a user from the list does **not** delete the account. To delete an account, set
   `state: absent` (keep the entry). Once removed from the hosts you may delete the entry.
 - By default a removed account keeps its home directory. Set `remove_home: true` on the entry
@@ -170,6 +173,10 @@ You can tune behavior by overriding the variables in [`defaults/main.yml`](defau
 | `user_remove_home_on_delete` | `false`     | Also remove the home directory when `state: absent`.     |
 | `sudo_nopasswd`              | `true`      | `true` = passwordless sudo (NOPASSWD); `false` = prompt. |
 | `user_force_password_change` | `true`      | Expire an initial `password` on creation, forcing a change at first login. |
+
+> **Sudo note:** `sudo_nopasswd` defaults to `true`, so users with `sudo: true` get passwordless
+> (`NOPASSWD:ALL`) root. This is convenient for key-based automation; if your policy requires a
+> password prompt for sudo, set `sudo_nopasswd: false` (each sudo user must then have a password).
 
 ## Requirements
 
