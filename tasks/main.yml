@@ -6,23 +6,60 @@
          + (users | selectattr('state', 'defined')
                   | rejectattr('state', 'equalto', 'absent') | list) }}
 
-- name: Ensure supplementary groups exist
-  ansible.builtin.group:
-    name: "{{ item }}"
-    state: present
-  loop: "{{ _present_users | map(attribute='groups', default=[]) | flatten | unique }}"
-
 - name: Snapshot existing accounts before creation
   ansible.builtin.getent:
     database: passwd
+
+- name: Snapshot existing groups before creation
+  ansible.builtin.getent:
+    database: group
 
 - name: Record which usernames already exist
   ansible.builtin.set_fact:
     _existing_usernames: "{{ ansible_facts.getent_passwd.keys() | list }}"
 
+- name: Fail if a requested UID is already used by another account
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_facts.getent_passwd | dict2items
+          | rejectattr('key', 'equalto', item.username)
+          | selectattr('value.1', 'equalto', item.uid | string)
+          | list | length) == 0
+    fail_msg: "UID {{ item.uid }} for user '{{ item.username }}' is already in use by another account."
+    quiet: true
+  loop: "{{ _present_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when: item.uid is defined
+
+- name: Fail if a requested GID is already used by another group
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_facts.getent_group | dict2items
+          | rejectattr('key', 'equalto', item.key)
+          | selectattr('value.1', 'equalto', item.value | string)
+          | list | length) == 0
+    fail_msg: "GID {{ item.value }} for group '{{ item.key }}' is already in use by another group."
+    quiet: true
+  loop: "{{ (group_gids | default({})) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Ensure supplementary groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    gid: "{{ (group_gids | default({}))[item] | default(omit) }}"
+    non_unique: false
+    state: present
+  loop: "{{ _present_users | map(attribute='groups', default=[]) | flatten | unique }}"
+
 - name: Manage user accounts
   ansible.builtin.user:
     name: "{{ item.username }}"
+    uid: "{{ item.uid | default(omit) }}"
+    non_unique: false
     comment: "{{ item.fullname | default(omit) }}"
     groups: "{{ item.groups | default([]) | join(',') | default(omit, true)}}"
     append: false

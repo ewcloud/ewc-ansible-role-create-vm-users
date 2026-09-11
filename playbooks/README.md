@@ -11,8 +11,6 @@ ansible-playbook -i inventory/hosts.ini playbooks/create_vm_users.yml
 # Use a custom users file
 ansible-playbook -i inventory/hosts.ini playbooks/create_vm_users.yml -e users_file=path/to/users.yml
 
-# If the users file is Vault-encrypted
-ansible-playbook -i inventory/hosts.ini playbooks/create_vm_users.yml -e users_file=path/to/users.yml --ask-vault-pass
 ```
 
 ## Passing the users file
@@ -34,11 +32,6 @@ users:
     state: absent
 ```
 
-Vault-encrypt the file if it contains any password hashes:
-
-```bash
-ansible-vault encrypt users.yml
-```
 
 ## Variables
 
@@ -47,6 +40,7 @@ ansible-vault encrypt users.yml
 | Field         | Required | Description                                                                 |
 | ------------- | -------- | --------------------------------------------------------------------------- |
 | `username`    | yes      | Login name of the account.                                                  |
+| `uid`         | no       | Numeric UID for the account. Fails if already used by another account.      |
 | `fullname`    | no       | Human-readable name, stored as the account comment (GECOS).                 |
 | `ssh_keys`    | no       | List of SSH **public** keys authorized for the user.                        |
 | `groups`      | no       | List of supplementary groups. Groups are created automatically if missing.  |
@@ -55,7 +49,17 @@ ansible-vault encrypt users.yml
 | `remove_home` | no       | When `state: absent`, also delete the home directory.                       |
 | `state`       | no       | `present` (default) creates/updates the user; `absent` removes the account. |
 
-### Global defaults
+### Group GIDs (`group_gids` map)
+
+Optional top-level `name: gid` map to assign fixed GIDs to created groups. Fails if a GID is
+already used by a different group.
+
+```yaml
+group_gids:
+  developers: 3000
+  deploy: 3001
+```
+
 
 | Variable                     | Default     | Description                                              |
 | ---------------------------- | ----------- | -------------------------------------------------------- |

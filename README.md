@@ -68,6 +68,7 @@ Each entry supports these fields:
 | Field         | Required | Description                                                                 |
 | ------------- | -------- | --------------------------------------------------------------------------- |
 | `username`    | yes      | Login name of the account.                                                  |
+| `uid`         | no       | Numeric UID for the account. Fails if already used by another account.      |
 | `fullname`    | no       | Human-readable name, stored as the account comment (GECOS).                 |
 | `ssh_keys`    | no       | List of SSH **public** keys authorized for the user.                        |
 | `groups`      | no       | List of supplementary groups. Groups are created automatically if missing.  |
@@ -113,6 +114,17 @@ Important:
   `state: absent` (keep the entry). Once removed from the hosts you may delete the entry.
 - By default a removed account keeps its home directory. Set `remove_home: true` on the entry
   (or `user_remove_home_on_delete: true` globally) to also delete it.
+
+### Group GIDs (optional)
+
+Set fixed GIDs for the groups this role creates via an optional top-level `group_gids` map
+(`name: gid`). Creation fails if a GID is already used by a different group.
+
+```yaml
+group_gids:
+  developers: 3000
+  deploy: 3001
+```
 
 ### Passwords (optional)
 
