@@ -47,6 +47,24 @@
   loop_control:
     label: "{{ item.key }}"
 
+- name: Fail if the same UID is requested for more than one user
+  ansible.builtin.assert:
+    that:
+      - >-
+        (_present_users | selectattr('uid', 'defined') | map(attribute='uid') | list | length)
+        == (_present_users | selectattr('uid', 'defined') | map(attribute='uid') | unique | list | length)
+    fail_msg: "The same UID is assigned to more than one user in this run."
+    quiet: true
+
+- name: Fail if the same GID is requested for more than one group
+  ansible.builtin.assert:
+    that:
+      - >-
+        ((group_gids | default({})).values() | list | length)
+        == ((group_gids | default({})).values() | unique | list | length)
+    fail_msg: "The same GID is assigned to more than one group in group_gids."
+    quiet: true
+
 - name: Ensure supplementary groups exist
   ansible.builtin.group:
     name: "{{ item }}"
@@ -89,6 +107,7 @@
   loop: "{{ _present_users }}"
   loop_control:
     label: "{{ item.username }}"
+  no_log: true
   when:
     - item.ssh_keys | default([]) | length > 0
     - ansible_facts.getent_passwd[item.username] is defined
@@ -104,6 +123,7 @@
   loop: "{{ _present_users }}"
   loop_control:
     label: "{{ item.username }}"
+  no_log: true
   when:
     - item.ssh_keys | default([]) | length > 0
     - ansible_facts.getent_passwd[item.username] is defined
@@ -115,6 +135,7 @@
   loop: "{{ _present_users }}"
   loop_control:
     label: "{{ item.username }}"
+  no_log: true
   when:
     - user_force_password_change | bool
     - item.password is defined
@@ -132,6 +153,7 @@
   loop: "{{ users }}"
   loop_control:
     label: "{{ item.username }}"
+  no_log: true
   when:
     - item.sudo | default(false)
     - item.state | default('present') != 'absent'
@@ -143,6 +165,7 @@
   loop: "{{ users }}"
   loop_control:
     label: "{{ item.username }}"
+  no_log: true
   when: >
     (not (item.sudo | default(false)))
     or (item.state | default('present') == 'absent')

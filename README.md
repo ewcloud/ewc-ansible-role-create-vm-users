@@ -30,10 +30,10 @@ This repository contains only the role. Install it as a dependency of an Ansible
 ```yaml
 # requirements.yml
 roles:
-  - name: create_users
+  - name: ewc-ansible-role-create-vm-users
     src: https://github.com/ewcloud/ewc-ansible-role-create-vm-users.git
     scm: git
-    version: main   # or pin to a released tag
+    version: 0.0.1   # or pin to another released tag
 ```
 
 Then install it:
@@ -55,7 +55,7 @@ in `group_vars/all.yml` or `host_vars`):
   hosts: all
   become: true
   roles:
-    - role: create_users
+    - role: ewc-ansible-role-create-vm-users
 ```
 
 ## Variables
@@ -117,6 +117,8 @@ Important:
   `state: absent` (keep the entry). Once removed from the hosts you may delete the entry.
 - By default a removed account keeps its home directory. Set `remove_home: true` on the entry
   (or `user_remove_home_on_delete: true` globally) to also delete it.
+- `groups` is applied **exactly** (not appended): each run makes a user a member of only the
+  listed supplementary groups; any supplementary group not listed is removed from that user.
 
 ### Group GIDs (optional)
 

@@ -2,6 +2,9 @@
 # Users to manage. Override in group_vars/host_vars or on the command line.
 users: []
 
+# Optional map of group name -> GID for groups this role creates (e.g. {developers: 3000}).
+group_gids: {}
+
 # Default login shell for created accounts.
 user_default_shell: /bin/bash
 

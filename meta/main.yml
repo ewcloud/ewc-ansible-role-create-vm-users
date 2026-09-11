@@ -4,5 +4,26 @@ galaxy_info:
   description: Create and configure local users on VMs
   company: ECMWF
   license: Apache 2.0
-  min_ansible_version: "2.1"
-  galaxy_tags: []
+  min_ansible_version: "2.10"
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - users
+    - accounts
+    - ssh
+    - sudo
+    - security
+
+dependencies: []
